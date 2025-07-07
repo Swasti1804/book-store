@@ -1,7 +1,14 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import { mockCurrentUser, type User } from "@/lib/mock-data"
+import axios from "axios"
+
+export interface User {
+  _id: string
+  name: string
+  email: string
+  // Add more fields if needed
+}
 
 interface AuthContextType {
   user: User | null
@@ -18,8 +25,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
+  const API_URL = "http://localhost:5000/api/auth" // Update if deployed
+
   useEffect(() => {
-    // Check for stored user data on mount
     const storedUser = localStorage.getItem("bookbridge-user")
     if (storedUser) {
       try {
@@ -34,64 +42,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true)
+    try {
+      const response = await axios.post(`${API_URL}/login`, { email, password })
+      const { token, user } = response.data
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+      // Store token and user in localStorage
+      localStorage.setItem("token", token)
+      localStorage.setItem("bookbridge-user", JSON.stringify(user))
 
-    // Mock authentication - accept any email/password combination
-    if (email && password) {
-      const userData = { ...mockCurrentUser, email }
-      setUser(userData)
-      localStorage.setItem("bookbridge-user", JSON.stringify(userData))
-      setIsLoading(false)
+      setUser(user)
       return true
+    } catch (error) {
+      console.error("Login error:", error)
+      return false
+    } finally {
+      setIsLoading(false)
     }
-
-    setIsLoading(false)
-    return false
   }
 
   const register = async (name: string, email: string, password: string): Promise<boolean> => {
     setIsLoading(true)
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    // Mock registration - accept any valid inputs
-    if (name && email && password) {
-      const userData = {
-        ...mockCurrentUser,
-        name,
-        email,
-        id: `user-${Date.now()}`,
-        stats: {
-          ...mockCurrentUser.stats,
-          booksListed: 0,
-          booksShared: 0,
-          totalDonations: 0,
-          impactScore: 0,
-          currentStreak: 0,
-          level: "Newcomer",
-          totalViews: 0,
-          totalMessages: 0,
-          communityRank: 1000,
-          booksRead: 0,
-          readingGoal: 12,
-        },
-      }
-      setUser(userData)
-      localStorage.setItem("bookbridge-user", JSON.stringify(userData))
+    try {
+      await axios.post(`${API_URL}/register`, { name, email, password })
+      return await login(email, password) // Auto-login
+    } catch (error) {
+      console.error("Register error:", error)
+      return false
+    } finally {
       setIsLoading(false)
-      return true
     }
-
-    setIsLoading(false)
-    return false
   }
 
   const logout = () => {
     setUser(null)
     localStorage.removeItem("bookbridge-user")
+    localStorage.removeItem("token")
   }
 
   const updateUser = (updatedUser: User) => {

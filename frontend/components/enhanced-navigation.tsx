@@ -37,6 +37,19 @@ import { cn } from "@/lib/utils"
 import { useAuth } from "./auth-provider"
 import { ProfileSettings } from "./profile-settings"
 
+interface UserStats {
+  impactScore: number
+  communityRank: number
+  booksListed: number
+  booksShared: number
+}
+
+interface AuthUser {
+  name: string
+  email: string
+  stats?: Partial<UserStats>
+}
+
 const navigation = [
   { name: "Home", href: "/", icon: Home },
   { name: "Discover", href: "/discover", icon: Search },
@@ -47,10 +60,10 @@ const navigation = [
 
 export function EnhancedNavigation() {
   const pathname = usePathname()
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuth() as { user: AuthUser | null; logout: () => void }
   const [isScrolled, setIsScrolled] = useState(false)
   const [showProfileSettings, setShowProfileSettings] = useState(false)
-  const [notifications] = useState(3) // Mock notification count
+  const [notifications] = useState(3)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -63,6 +76,16 @@ export function EnhancedNavigation() {
   const handleLogout = () => {
     logout()
   }
+
+  // Safe user stats with defaults
+  const userStats = {
+    impactScore: user?.stats?.impactScore ?? 0,
+    communityRank: user?.stats?.communityRank ?? 0,
+    booksListed: user?.stats?.booksListed ?? 0,
+    booksShared: user?.stats?.booksShared ?? 0,
+  }
+
+  const userLevel = Math.floor(userStats.impactScore / 200) + 1
 
   return (
     <>
@@ -156,7 +179,7 @@ export function EnhancedNavigation() {
                             <div className="text-sm font-semibold text-gray-900">{user.name}</div>
                             <div className="text-xs text-gray-500 flex items-center">
                               <Crown className="h-3 w-3 mr-1 text-yellow-500" />
-                              Level {Math.floor(user.stats.impactScore / 200) + 1}
+                              Level {userLevel}
                             </div>
                           </div>
                           <ChevronDown className="h-4 w-4 text-gray-400" />
@@ -175,10 +198,10 @@ export function EnhancedNavigation() {
                             <div className="flex items-center mt-2 space-x-4">
                               <Badge variant="secondary" className="flex items-center">
                                 <Crown className="h-3 w-3 mr-1 text-yellow-500" />
-                                Level {Math.floor(user.stats.impactScore / 200) + 1}
+                                Level {userLevel}
                               </Badge>
                               <Badge variant="outline" className="flex items-center">
-                                <Trophy className="h-3 w-3 mr-1 text-purple-500" />#{user.stats.communityRank}
+                                <Trophy className="h-3 w-3 mr-1 text-purple-500" />#{userStats.communityRank}
                               </Badge>
                             </div>
                           </div>
@@ -190,21 +213,21 @@ export function EnhancedNavigation() {
                         <div className="text-center">
                           <div className="flex items-center justify-center mb-1">
                             <Zap className="h-4 w-4 text-blue-500 mr-1" />
-                            <span className="font-bold text-gray-900">{user.stats.impactScore}</span>
+                            <span className="font-bold text-gray-900">{userStats.impactScore}</span>
                           </div>
                           <div className="text-xs text-gray-600">Impact</div>
                         </div>
                         <div className="text-center">
                           <div className="flex items-center justify-center mb-1">
                             <Book className="h-4 w-4 text-green-500 mr-1" />
-                            <span className="font-bold text-gray-900">{user.stats.booksListed}</span>
+                            <span className="font-bold text-gray-900">{userStats.booksListed}</span>
                           </div>
                           <div className="text-xs text-gray-600">Books</div>
                         </div>
                         <div className="text-center">
                           <div className="flex items-center justify-center mb-1">
                             <Heart className="h-4 w-4 text-red-500 mr-1" />
-                            <span className="font-bold text-gray-900">{user.stats.booksShared}</span>
+                            <span className="font-bold text-gray-900">{userStats.booksShared}</span>
                           </div>
                           <div className="text-xs text-gray-600">Shared</div>
                         </div>
